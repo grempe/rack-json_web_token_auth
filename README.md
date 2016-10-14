@@ -1,5 +1,7 @@
 # Rack::JsonWebTokenAuth
 
+[![Build Status](https://travis-ci.org/grempe/rack-json_web_token_auth.svg?branch=master)](https://travis-ci.org/grempe/rack-json_web_token_auth)
+
 ## WARNING
 
 This is pre-release software. It is pretty well tested but has not yet
