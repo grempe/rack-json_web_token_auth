@@ -69,26 +69,7 @@ module Rack
         # Verify the token and its claims are valid
         jwt_opts = resource.opts[:jwt]
         jwt = ::JwtClaims.verify(token, jwt_opts)
-
-        # JwtClaims.verify returns a JWT claims set hash, if the
-        # JWT Message Authentication Code (MAC), or signature,
-        # are verified and the registered claims are also verified.
-        if Contract.valid?(jwt, C::HashOf[ok: C::HashOf[Symbol => C::Any]])
-          # Authenticated! Pass all claims into the app env for app use
-          # with the hash keys converted to strings to match Rack env.
-          env[ENV_KEY] = Hashie.stringify_keys(jwt[:ok])
-        elsif Contract.valid?(jwt, C::HashOf[error: C::ArrayOf[Symbol]])
-          # a list of any registered claims that fail validation, if the JWT MAC is verified
-          raise TokenError, "invalid JWT claims : #{jwt[:error].sort.join(', ')}"
-        elsif Contract.valid?(jwt, C::HashOf[error: 'invalid JWT'])
-          # the JWT MAC is not verified
-          raise TokenError, 'invalid JWT'
-        elsif Contract.valid?(jwt, C::HashOf[error: 'invalid input'])
-          # otherwise
-          raise TokenError, 'invalid JWT input'
-        else
-          raise TokenError, 'unhandled JWT error'
-        end
+        handle_token(env, jwt)
 
         @app.call(env)
       end
@@ -119,6 +100,29 @@ module Rack
                   'Content-Type' => 'text/plain',
                   'Content-Length' => body.bytesize.to_s }
       [401, headers, [body]]
+    end
+
+    # JwtClaims.verify returns a JWT claims set hash, if the
+    # JWT Message Authentication Code (MAC), or signature,
+    # are verified and the registered claims are also verified.
+    Contract Hash, Hash => Hash
+    def handle_token(env, jwt)
+      if Contract.valid?(jwt, C::HashOf[ok: C::HashOf[Symbol => C::Any]])
+        # Authenticated! Pass all claims into the app env for app use
+        # with the hash keys converted to strings to match Rack env.
+        env[ENV_KEY] = Hashie.stringify_keys(jwt[:ok])
+      elsif Contract.valid?(jwt, C::HashOf[error: C::ArrayOf[Symbol]])
+        # a list of any registered claims that fail validation, if the JWT MAC is verified
+        raise TokenError, "invalid JWT claims : #{jwt[:error].sort.join(', ')}"
+      elsif Contract.valid?(jwt, C::HashOf[error: 'invalid JWT'])
+        # the JWT MAC is not verified
+        raise TokenError, 'invalid JWT'
+      elsif Contract.valid?(jwt, C::HashOf[error: 'invalid input'])
+        # otherwise
+        raise TokenError, 'invalid JWT input'
+      else
+        raise TokenError, 'unhandled JWT error'
+      end
     end
   end
 end
