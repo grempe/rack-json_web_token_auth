@@ -1,4 +1,3 @@
-require 'custom_contracts'
 require 'rack/json_web_token_auth/resource'
 
 module Rack

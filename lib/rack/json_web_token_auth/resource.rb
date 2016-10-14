@@ -1,5 +1,3 @@
-require 'custom_contracts'
-
 module Rack
   class JsonWebTokenAuth
     class Resource
@@ -8,7 +6,7 @@ module Rack
 
       attr_accessor :public_resource, :path, :pattern, :opts
 
-      Contract C::Bool, C::ResourcePath, Hash => C::Any
+      Contract C::Bool, String, Hash => C::Any
       def initialize(public_resource, path, opts = {})
         @public_resource = public_resource
         @path = path
@@ -23,13 +21,13 @@ module Rack
         else
           # secured resources must have a :jwt hash with a :key
           unless Contract.valid?(@opts, ({ jwt: { key: nil, alg: 'none' } })) ||
-                 Contract.valid?(@opts, ({ jwt: { key: C::Key } }))
+                 Contract.valid?(@opts, ({ jwt: { key: Key } }))
             raise 'invalid or missing jwt options for secured resource'
           end
         end
       end
 
-      Contract C::ResourcePath => C::Maybe[Fixnum]
+      Contract String => C::Maybe[Fixnum]
       def matches_path?(path)
         pattern =~ path
       end
@@ -41,7 +39,7 @@ module Rack
 
       protected
 
-      Contract C::ResourcePath => Regexp
+      Contract String => Regexp
       def compile(path)
         if path.respond_to? :to_str
           special_chars = %w{. + ( )}

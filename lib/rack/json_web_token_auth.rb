@@ -3,7 +3,7 @@ require 'contracts'
 require 'hashie'
 require 'jwt_claims'
 
-require 'custom_contracts'
+require 'rack/json_web_token_auth/contracts'
 require 'rack/json_web_token_auth/resources'
 require 'rack/json_web_token_auth/resource'
 
@@ -44,7 +44,7 @@ module Rack
       all_resources << resources
     end
 
-    Contract Hash => C::RackResponse
+    Contract Hash => RackResponse
     def call(env)
       begin
         resource = resource_for_path(env[PATH_INFO_HEADER_KEY])
@@ -60,12 +60,12 @@ module Rack
           # a `secured` resource, validate the token to see if authenticated
 
           # Test that `env` has a well formed Authorization header
-          unless Contract.valid?(env, C::RackRequestHttpAuth)
+          unless Contract.valid?(env, RackRequestHttpAuth)
             raise TokenError, 'malformed Authorization header or token'
           end
 
           # Extract the token from the 'Authorization: Bearer token' string
-          token = C::BEARER_TOKEN_REGEX.match(env['HTTP_AUTHORIZATION'])[1]
+          token = BEARER_TOKEN_REGEX.match(env['HTTP_AUTHORIZATION'])[1]
 
           # Verify the token and its claims are valid
           jwt_opts = resource.opts[:jwt]
