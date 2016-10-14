@@ -115,7 +115,8 @@ gem and the resource path matching code is a direct port from it.
 ```ruby
 require 'rack/json_web_token_auth'
 
-use Rack::JsonWebTokenAuth.new do
+# Sinatra `use` syntax
+use Rack::JsonWebTokenAuth do
 
   # You can define JWT options for all `secured` resources globally
   # or you can specify a hash like this inside each block. If you want to
