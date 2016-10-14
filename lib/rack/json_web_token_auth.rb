@@ -93,17 +93,9 @@ module Rack
         @app.call(env)
       end
     rescue TokenError => e
-      body = e.message.nil? ? 'Unauthorized' : "Unauthorized : #{e.message}"
-      headers = { 'WWW-Authenticate' => 'Bearer error="invalid_token"',
-                  'Content-Type' => 'text/plain',
-                  'Content-Length' => body.bytesize.to_s }
-      [401, headers, [body]]
+      return_401(e.message)
     rescue StandardError
-      body = 'Unauthorized'
-      headers = { 'WWW-Authenticate' => 'Bearer error="invalid_token"',
-                  'Content-Type' => 'text/plain',
-                  'Content-Length' => body.bytesize.to_s }
-      [401, headers, [body]]
+      return_401
     end
 
     Contract C::None => C::Or[C::ArrayOf[Resources], []]
@@ -118,6 +110,15 @@ module Rack
         return found unless found.nil?
       end
       nil
+    end
+
+    Contract String => RackResponse
+    def return_401(msg = nil)
+      body = msg.nil? ? 'Unauthorized' : "Unauthorized : #{msg}"
+      headers = { 'WWW-Authenticate' => 'Bearer error="invalid_token"',
+                  'Content-Type' => 'text/plain',
+                  'Content-Length' => body.bytesize.to_s }
+      [401, headers, [body]]
     end
   end
 end
