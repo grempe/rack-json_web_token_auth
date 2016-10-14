@@ -27,7 +27,7 @@ module Rack
         end
       end
 
-      Contract String => C::Maybe[Fixnum]
+      Contract String => C::Maybe[Integer]
       def matches_path?(path)
         pattern =~ path
       end
@@ -46,12 +46,12 @@ module Rack
           pattern =
             path.to_str.gsub(/((:\w+)|[\*#{special_chars.join}])/) do |match|
               case match
-              when "*"
-                "(.*?)"
+              when '*'
+                '(.*?)'
               when *special_chars
                 Regexp.escape(match)
               else
-                "([^/?&#]+)"
+                '([^/?&#]+)'
               end
             end
           /^#{pattern}$/
