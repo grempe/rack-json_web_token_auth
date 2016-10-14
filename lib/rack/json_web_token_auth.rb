@@ -8,6 +8,9 @@ require 'rack/json_web_token_auth/resource'
 require 'custom_contracts'
 
 module Rack
+  # Custom error class
+  class TokenError < StandardError; end
+
   # Rack Middleware for JSON Web Token Authentication
   class JsonWebTokenAuth
     include Contracts::Core
@@ -52,13 +55,13 @@ module Rack
         elsif resource.nil?
           # no matching `secured` or `unsecured` resource.
           # fail-safe with 401 unauthorized
-          raise 'No resource for path defined. Deny by default.'
+          raise TokenError, 'No resource for path defined. Deny by default.'
         else
           # a `secured` resource, validate the token to see if authenticated
 
           # Test that `env` has a well formed Authorization header
           unless Contract.valid?(env, C::RackRequestHttpAuth)
-            raise 'malformed Authorization header or token'
+            raise TokenError, 'malformed Authorization header or token'
           end
 
           # Extract the token from the 'Authorization: Bearer token' string
@@ -77,21 +80,28 @@ module Rack
             env[ENV_KEY] = Hashie.stringify_keys(jwt[:ok])
           elsif Contract.valid?(jwt, C::HashOf[error: C::ArrayOf[Symbol]])
             # a list of any registered claims that fail validation, if the JWT MAC is verified
-            raise "invalid JWT claims : #{jwt[:error].sort.join(', ')}"
+            raise TokenError, "invalid JWT claims : #{jwt[:error].sort.join(', ')}"
           elsif Contract.valid?(jwt, C::HashOf[error: 'invalid JWT'])
             # the JWT MAC is not verified
-            raise 'invalid JWT'
+            raise TokenError, 'invalid JWT'
           elsif Contract.valid?(jwt, C::HashOf[error: 'invalid input'])
             # otherwise
-            raise 'invalid JWT input'
+            raise TokenError, 'invalid JWT input'
           else
-            raise 'unhandled JWT error'
+            raise TokenError, 'unhandled JWT error'
           end
 
           @app.call(env)
         end
-      rescue StandardError => e
+      rescue TokenError => e
         body = e.message.nil? ? 'Unauthorized' : "Unauthorized : #{e.message}"
+        headers = { 'WWW-Authenticate' => 'Bearer error="invalid_token"',
+                    'Content-Type' => 'text/plain',
+                    'Content-Length' => body.bytesize.to_s }
+        [401, headers, [body]]
+      rescue StandardError => e
+        # puts e.message
+        body = 'Unauthorized'
         headers = { 'WWW-Authenticate' => 'Bearer error="invalid_token"',
                     'Content-Type' => 'text/plain',
                     'Content-Length' => body.bytesize.to_s }
