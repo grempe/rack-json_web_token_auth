@@ -1,6 +1,7 @@
 # Rack::JsonWebTokenAuth
 
 [![Build Status](https://travis-ci.org/grempe/rack-json_web_token_auth.svg?branch=master)](https://travis-ci.org/grempe/rack-json_web_token_auth)
+[![Code Climate](https://codeclimate.com/github/grempe/rack-json_web_token_auth/badges/gpa.svg)](https://codeclimate.com/github/grempe/rack-json_web_token_auth)
 
 ## WARNING
 
