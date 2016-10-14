@@ -46,7 +46,7 @@ module Rack
       begin
         resource = resource_for_path(env[PATH_INFO_HEADER_KEY])
 
-        if resource.public_resource?
+        if resource && resource.public_resource?
           # whitelisted as `unsecured`. skip all token authentication.
           @app.call(env)
         elsif resource.nil?
