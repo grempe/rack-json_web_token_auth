@@ -18,7 +18,14 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^spec/})
   spec.require_paths = ['lib']
   spec.platform      = Gem::Platform::RUBY
+
   spec.required_ruby_version = '>= 2.2.5'
+
+  cert = File.expand_path('~/.gem-certs/gem-private_key_grempe_2026.pem')
+  if cert && File.exist?(cert)
+    spec.signing_key = cert
+    spec.cert_chain = ['certs/gem-public_cert_grempe_2026.pem']
+  end
 
   spec.add_runtime_dependency 'contracts', '~> 0.14'
   spec.add_runtime_dependency 'hashie', '~> 3.4'
