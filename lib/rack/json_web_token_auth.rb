@@ -3,9 +3,9 @@ require 'contracts'
 require 'hashie'
 require 'jwt_claims'
 
+require 'custom_contracts'
 require 'rack/json_web_token_auth/resources'
 require 'rack/json_web_token_auth/resource'
-require 'custom_contracts'
 
 module Rack
   # Custom error class
