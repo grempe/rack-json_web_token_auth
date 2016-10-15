@@ -46,47 +46,5 @@ module Rack
         'A JWT secret string or signature key'
       end
     end
-
-    class Algorithm
-      def self.valid?(val)
-        Contracts::Enum['none', 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512'].valid?(val)
-      end
-
-      def self.to_s
-        'A valid JWT token signature algorithm, or none'
-      end
-    end
-
-    class DecodedToken
-      def self.valid?(val)
-        Contracts::ArrayOf[Hash].valid?(val) &&
-          Contracts::DecodedTokenClaims.valid?(val[0]) &&
-          Contracts::DecodedTokenHeader.valid?(val[1])
-      end
-
-      def self.to_s
-        'A valid Array of decoded token claims and header Hashes'
-      end
-    end
-
-    class DecodedTokenClaims
-      def self.valid?(val)
-        Contracts::HashOf[Contracts::Or[String, Symbol] => Contracts::Maybe[Contracts::Or[String, Contracts::Num, Contracts::Bool, Contracts::ArrayOf[Contracts::Any], Hash]]].valid?(val)
-      end
-
-      def self.to_s
-        'A valid decoded token payload attribute'
-      end
-    end
-
-    class DecodedTokenHeader
-      def self.valid?(val)
-        Contracts::HashOf[Contracts::Enum['typ', 'alg'] => Contracts::Or['JWT', Contracts::TokenAlgorithm]].valid?(val)
-      end
-
-      def self.to_s
-        'A valid decoded token header attribute'
-      end
-    end
   end
 end
