@@ -4,25 +4,25 @@ module Rack
   class JsonWebTokenAuth
     class Resources
       include Contracts::Core
-      C = Contracts
+      include Contracts::Builtin
 
-      Contract C::KeywordArgs[public_resource: C::Bool] => C::Any
+      Contract KeywordArgs[public_resource: Bool] => Any
       def initialize(public_resource: false)
         @resources = []
         @public_resource = public_resource
       end
 
-      Contract C::None => C::Bool
+      Contract None => Bool
       def public_resource?
         @public_resource
       end
 
-      Contract String, C::Maybe[Hash] => C::ArrayOf[Resource]
+      Contract String, Maybe[Hash] => ArrayOf[Resource]
       def resource(path, opts = {})
         @resources << Resource.new(public_resource?, path, opts)
       end
 
-      Contract String => C::Maybe[Resource]
+      Contract String => Maybe[Resource]
       def resource_for_path(path)
         # return first match
         @resources.detect { |r| r.matches_path?(path) }

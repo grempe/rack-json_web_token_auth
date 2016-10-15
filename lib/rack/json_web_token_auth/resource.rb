@@ -2,11 +2,11 @@ module Rack
   class JsonWebTokenAuth
     class Resource
       include Contracts::Core
-      C = Contracts
+      include Contracts::Builtin
 
       attr_accessor :public_resource, :path, :pattern, :opts
 
-      Contract C::Bool, String, Hash => C::Any
+      Contract Bool, String, Hash => Any
       def initialize(public_resource, path, opts = {})
         @public_resource = public_resource
         @path = path
@@ -27,12 +27,12 @@ module Rack
         end
       end
 
-      Contract String => C::Maybe[Integer]
+      Contract String => Maybe[Integer]
       def matches_path?(path)
         pattern =~ path
       end
 
-      Contract C::None => C::Bool
+      Contract None => Bool
       def public_resource?
         public_resource
       end

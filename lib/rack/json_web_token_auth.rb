@@ -3,30 +3,28 @@ require 'contracts'
 require 'hashie'
 require 'jwt_claims'
 
+require 'rack/json_web_token_auth/exceptions'
 require 'rack/json_web_token_auth/contracts'
 require 'rack/json_web_token_auth/resources'
 require 'rack/json_web_token_auth/resource'
 
 module Rack
-  # Custom error class
-  class TokenError < StandardError; end
-
   # Rack Middleware for JSON Web Token Authentication
   class JsonWebTokenAuth
     include Contracts::Core
-    C = Contracts
+    include Contracts::Builtin
 
     ENV_KEY = 'jwt.claims'.freeze
     PATH_INFO_HEADER_KEY = 'PATH_INFO'.freeze
 
-    Contract C::Any, Proc => C::Any
+    Contract Any, Proc => Any
     def initialize(app, &block)
       @app = app
       # execute the block methods provided in the context of this class
       instance_eval(&block)
     end
 
-    Contract Proc => C::ArrayOf[Resources]
+    Contract Proc => ArrayOf[Resources]
     def secured(&block)
       resources = Resources.new(public_resource: false)
       # execute the methods in the 'secured' block in the context of
@@ -35,7 +33,7 @@ module Rack
       all_resources << resources
     end
 
-    Contract Proc => C::ArrayOf[Resources]
+    Contract Proc => ArrayOf[Resources]
     def unsecured(&block)
       resources = Resources.new(public_resource: true)
       # execute the methods in the 'unsecured' block in the context of
@@ -79,12 +77,12 @@ module Rack
       return_401
     end
 
-    Contract C::None => C::Or[C::ArrayOf[Resources], []]
+    Contract None => Or[ArrayOf[Resources], []]
     def all_resources
       @all_resources ||= []
     end
 
-    Contract String => C::Maybe[Resource]
+    Contract String => Maybe[Resource]
     def resource_for_path(path_info)
       all_resources.each do |r|
         found = r.resource_for_path(path_info)
@@ -107,17 +105,17 @@ module Rack
     # are verified and the registered claims are also verified.
     Contract Hash, Hash => Hash
     def handle_token(env, jwt)
-      if Contract.valid?(jwt, C::HashOf[ok: C::HashOf[Symbol => C::Any]])
+      if Contract.valid?(jwt, HashOf[ok: HashOf[Symbol => Any]])
         # Authenticated! Pass all claims into the app env for app use
         # with the hash keys converted to strings to match Rack env.
         env[ENV_KEY] = Hashie.stringify_keys(jwt[:ok])
-      elsif Contract.valid?(jwt, C::HashOf[error: C::ArrayOf[Symbol]])
+      elsif Contract.valid?(jwt, HashOf[error: ArrayOf[Symbol]])
         # a list of any registered claims that fail validation, if the JWT MAC is verified
         raise TokenError, "invalid JWT claims : #{jwt[:error].sort.join(', ')}"
-      elsif Contract.valid?(jwt, C::HashOf[error: 'invalid JWT'])
+      elsif Contract.valid?(jwt, HashOf[error: 'invalid JWT'])
         # the JWT MAC is not verified
         raise TokenError, 'invalid JWT'
-      elsif Contract.valid?(jwt, C::HashOf[error: 'invalid input'])
+      elsif Contract.valid?(jwt, HashOf[error: 'invalid input'])
         # otherwise
         raise TokenError, 'invalid JWT input'
       else

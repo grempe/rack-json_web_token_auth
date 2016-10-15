@@ -1,8 +1,5 @@
 module Rack
   class JsonWebTokenAuth
-    include Contracts::Core
-    C = Contracts
-
     # Custom Contracts
     # See : https://egonschiele.github.io/contracts.ruby/
 
@@ -31,7 +28,7 @@ module Rack
 
     class RackResponse
       def self.valid?(val)
-        Contract.valid?(val, [C::Int, Hash, C::Any])
+        Contract.valid?(val, [Contracts::Int, Hash, Contracts::Any])
       end
 
       def self.to_s
@@ -42,7 +39,7 @@ module Rack
     class Key
       def self.valid?(val)
         return false if val.is_a?(String) && val.strip.empty?
-        C::Or[String, OpenSSL::PKey::RSA, OpenSSL::PKey::EC].valid?(val)
+        Contracts::Or[String, OpenSSL::PKey::RSA, OpenSSL::PKey::EC].valid?(val)
       end
 
       def self.to_s
@@ -52,7 +49,7 @@ module Rack
 
     class Algorithm
       def self.valid?(val)
-        C::Enum['none', 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512'].valid?(val)
+        Contracts::Enum['none', 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512'].valid?(val)
       end
 
       def self.to_s
@@ -62,9 +59,9 @@ module Rack
 
     class DecodedToken
       def self.valid?(val)
-        C::ArrayOf[Hash].valid?(val) &&
-          C::DecodedTokenClaims.valid?(val[0]) &&
-          C::DecodedTokenHeader.valid?(val[1])
+        Contracts::ArrayOf[Hash].valid?(val) &&
+          Contracts::DecodedTokenClaims.valid?(val[0]) &&
+          Contracts::DecodedTokenHeader.valid?(val[1])
       end
 
       def self.to_s
@@ -74,7 +71,7 @@ module Rack
 
     class DecodedTokenClaims
       def self.valid?(val)
-        C::HashOf[C::Or[String, Symbol] => C::Maybe[C::Or[String, C::Num, C::Bool, C::ArrayOf[C::Any], Hash]]].valid?(val)
+        Contracts::HashOf[Contracts::Or[String, Symbol] => Contracts::Maybe[Contracts::Or[String, Contracts::Num, Contracts::Bool, Contracts::ArrayOf[Contracts::Any], Hash]]].valid?(val)
       end
 
       def self.to_s
@@ -84,7 +81,7 @@ module Rack
 
     class DecodedTokenHeader
       def self.valid?(val)
-        C::HashOf[C::Enum['typ', 'alg'] => C::Or['JWT', C::TokenAlgorithm]].valid?(val)
+        Contracts::HashOf[Contracts::Enum['typ', 'alg'] => Contracts::Or['JWT', Contracts::TokenAlgorithm]].valid?(val)
       end
 
       def self.to_s
