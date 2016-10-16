@@ -16,6 +16,27 @@ module Rack
       )$
     }x
 
+    # These are Symbols and include the special :any value
+    class ResourceHttpMethods
+      def self.valid?(val)
+        Contract.valid?(val, Contracts::ArrayOf[Contracts::Enum[:any, :get, :head, :post, :put, :patch, :delete, :options]])
+      end
+
+      def self.to_s
+        'An array of allowed HTTP methods for initializing a Resource'
+      end
+    end
+
+    class HttpMethods
+      def self.valid?(val)
+        Contract.valid?(val, Contracts::Enum['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'])
+      end
+
+      def self.to_s
+        'An array of allowed HTTP methods'
+      end
+    end
+
     class RackRequestHttpAuth
       def self.valid?(val)
         Contract.valid?(val, ({ 'HTTP_AUTHORIZATION' => BEARER_TOKEN_REGEX }))

@@ -46,15 +46,20 @@ module Rack
     def call(env)
       resource = resource_for_path(env[PATH_INFO_HEADER_KEY])
 
-      if resource && resource.public_resource?
+      # no matching `secured` or `unsecured` resource.
+      # fail-safe with 401 unauthorized
+      if resource.nil?
+        raise TokenError, 'No resource for path defined. Deny by default.'
+      end
+
+      if resource.public_resource?
         # whitelisted as `unsecured`. skip all token authentication.
         @app.call(env)
-      elsif resource.nil?
-        # no matching `secured` or `unsecured` resource.
-        # fail-safe with 401 unauthorized
-        raise TokenError, 'No resource for path defined. Deny by default.'
       else
-        # a `secured` resource, validate the token to see if authenticated
+        # HTTP method not permitted
+        if resource.invalid_http_method?(env['REQUEST_METHOD'])
+          raise HttpMethodError, 'HTTP request method denied'
+        end
 
         # Test that `env` has a well formed Authorization header
         unless Contract.valid?(env, RackRequestHttpAuth)

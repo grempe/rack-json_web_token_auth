@@ -51,6 +51,17 @@ describe 'when initializing with' do
         resource '/public1_block1', jwt: jwt_opts
         resource '/public2_block1', jwt: jwt_opts
       end
+
+      secured do
+        resource '/private_http_any',       jwt: jwt_opts, methods: [:any]
+        resource '/private_http_get',       jwt: jwt_opts, methods: [:get]
+        resource '/private_http_head',      jwt: jwt_opts, methods: [:head]
+        resource '/private_http_post',      jwt: jwt_opts, methods: [:post]
+        resource '/private_http_put',       jwt: jwt_opts, methods: [:put]
+        resource '/private_http_patch',     jwt: jwt_opts, methods: [:patch]
+        resource '/private_http_delete',    jwt: jwt_opts, methods: [:delete]
+        resource '/private_http_options',   jwt: jwt_opts, methods: [:options]
+      end
     end
   }
 
@@ -261,56 +272,146 @@ describe 'when initializing with' do
         end
       end
     end
+
+    context 'defined in a special char path' do
+      describe 'allow access to . special char resource with a valid token' do
+        it 'and return 200' do
+          header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: key, alg: 'HS256')}"
+          get('/special.chars/foo')
+          expect(last_response.status).to eq 200
+        end
+      end
+
+      describe 'allow access to + special char resource with a valid token' do
+        it 'and return 200' do
+          header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: key, alg: 'HS256')}"
+          get('/special+chars/foo')
+          expect(last_response.status).to eq 200
+        end
+      end
+
+      describe 'allow access to ? special char resource with a valid token' do
+        it 'and return 200' do
+          header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: key, alg: 'HS256')}"
+          get('/special.chars/foo?bar=baz')
+          expect(last_response.status).to eq 200
+        end
+      end
+
+      describe 'allow access to # special char resource with a valid token' do
+        it 'and return 200' do
+          header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: key, alg: 'HS256')}"
+          get('/special.chars/foo#bar')
+          expect(last_response.status).to eq 200
+        end
+      end
+
+      describe 'deny access with an invalid token' do
+        it 'and return 401' do
+          header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: SecureRandom.hex(32), alg: 'HS256')}"
+          get('/special.chars/foo')
+          expect(last_response.status).to eq 401
+        end
+      end
+
+      describe 'deny access with no token' do
+        it 'and return 401' do
+          get('/special.chars/foo')
+          expect(last_response.status).to eq 401
+        end
+      end
+    end
+
+    context 'with methods option' do
+      describe 'and additional options present with :any' do
+        it 'raises an exception' do
+          expect {
+            Rack::JsonWebTokenAuth.new(inner_app) do
+              jwt_opts = {
+                key: '4a7b98c31c3b6918f916d809443c096d02bf686d6bead5baa4a162642cea98b3'
+              }
+
+              secured do
+                resource '/me', jwt: jwt_opts, methods: [:any, :get]
+              end
+            end
+          }.to raise_error(RuntimeError)
+        end
+      end
+
+      describe 'should allow access using HTTP GET by default with a valid token' do
+        it 'and return 200' do
+          header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: key, alg: 'HS256')}"
+          get('/private_http_get')
+          expect(last_response.status).to eq 200
+        end
+      end
+
+      describe 'should ignore a second resource defined for the same path with different HTTP options' do
+        let(:app) do
+          Rack::JsonWebTokenAuth.new(inner_app) do
+            jwt_opts = {
+              key: '4a7b98c31c3b6918f916d809443c096d02bf686d6bead5baa4a162642cea98b3'
+            }
+
+            secured do
+              resource '/me', jwt: jwt_opts, methods: [:get]
+              resource '/me', jwt: jwt_opts, methods: [:post]
+            end
+          end
+        end
+
+        it 'and return appropriate response' do
+          header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: key, alg: 'HS256')}"
+          get('/me')
+          expect(last_response.status).to eq 200
+          post('/me')
+          expect(last_response.status).to eq 401
+        end
+      end
+
+      describe 'should deny access by default with a request that does not match the HTTP method with a valid token' do
+        it 'and return 200' do
+          header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: key, alg: 'HS256')}"
+          get('/private_http_head')
+          expect(last_response.status).to eq 401
+          get('/private_http_post')
+          expect(last_response.status).to eq 401
+          get('/private_http_put')
+          expect(last_response.status).to eq 401
+          get('/private_http_patch')
+          expect(last_response.status).to eq 401
+          get('/private_http_delete')
+          expect(last_response.status).to eq 401
+          get('/private_http_options')
+          expect(last_response.status).to eq 401
+        end
+      end
+
+      describe 'should allow access with any request method against an :any method path with a valid token' do
+        it 'and return 200' do
+          header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: key, alg: 'HS256')}"
+          get('/private_http_any')
+          expect(last_response.status).to eq 200
+          head('/private_http_any')
+          expect(last_response.status).to eq 200
+          post('/private_http_any')
+          expect(last_response.status).to eq 200
+          put('/private_http_any')
+          expect(last_response.status).to eq 200
+          patch('/private_http_any')
+          expect(last_response.status).to eq 200
+          delete('/private_http_any')
+          expect(last_response.status).to eq 200
+          options('/private_http_any')
+          expect(last_response.status).to eq 200
+        end
+      end
+    end
   end
 
-  context 'defined in a special char path' do
-    describe 'allow access to . special char resource with a valid token' do
-      it 'and return 200' do
-        header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: key, alg: 'HS256')}"
-        get('/special.chars/foo')
-        expect(last_response.status).to eq 200
-      end
-    end
-
-    describe 'allow access to + special char resource with a valid token' do
-      it 'and return 200' do
-        header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: key, alg: 'HS256')}"
-        get('/special+chars/foo')
-        expect(last_response.status).to eq 200
-      end
-    end
-
-    describe 'allow access to ? special char resource with a valid token' do
-      it 'and return 200' do
-        header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: key, alg: 'HS256')}"
-        get('/special.chars/foo?bar=baz')
-        expect(last_response.status).to eq 200
-      end
-    end
-
-    describe 'allow access to # special char resource with a valid token' do
-      it 'and return 200' do
-        header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: key, alg: 'HS256')}"
-        get('/special.chars/foo#bar')
-        expect(last_response.status).to eq 200
-      end
-    end
-
-    describe 'deny access with an invalid token' do
-      it 'and return 401' do
-        header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: SecureRandom.hex(32), alg: 'HS256')}"
-        get('/special.chars/foo')
-        expect(last_response.status).to eq 401
-      end
-    end
-
-    describe 'deny access with no token' do
-      it 'and return 401' do
-        get('/special.chars/foo')
-        expect(last_response.status).to eq 401
-      end
-    end
-  end
+  # unsecured
+  ###########
 
   context 'unsecured resources' do
     describe 'provided with a :jwt key' do
@@ -321,7 +422,19 @@ describe 'when initializing with' do
               resource '/public', jwt: { key: 'abc123' }
             end
           end
-        }.to raise_error(RuntimeError, 'unexpected jwt options provided for unsecured resource')
+        }.to raise_error(RuntimeError, 'unexpected :jwt option provided for unsecured resource')
+      end
+    end
+
+    describe 'provided with a :methods key' do
+      it 'raises an exception' do
+        expect {
+          Rack::JsonWebTokenAuth.new(inner_app) do
+            unsecured do
+              resource '/public', methods: [:any]
+            end
+          end
+        }.to raise_error(RuntimeError, 'unexpected :methods option provided for unsecured resource')
       end
     end
 

@@ -4,9 +4,9 @@ module Rack
       include Contracts::Core
       include Contracts::Builtin
 
-      attr_accessor :public_resource, :path, :pattern, :opts
+      attr_reader :public_resource, :path, :pattern, :methods, :opts
 
-      Contract Bool, String, Hash => Any
+      Contract Bool, String, ({ jwt: Maybe[Hash], methods: Maybe[ResourceHttpMethods] }) => Any
       def initialize(public_resource, path, opts = {})
         @public_resource = public_resource
         @path = path
@@ -14,9 +14,14 @@ module Rack
         @opts = opts
 
         if public_resource
-          # unsecured resources should not have any jwt options defined
+          # unsecured resources should not have a :jwt option defined
           if @opts.key?(:jwt)
-            raise 'unexpected jwt options provided for unsecured resource'
+            raise 'unexpected :jwt option provided for unsecured resource'
+          end
+
+          # unsecured resources should not have a :methods option defined
+          if @opts.key?(:methods)
+            raise 'unexpected :methods option provided for unsecured resource'
           end
         else
           # secured resources must have a :jwt hash with a :key
@@ -24,6 +29,19 @@ module Rack
                  Contract.valid?(@opts, ({ jwt: { key: Key } }))
             raise 'invalid or missing jwt options for secured resource'
           end
+
+          # Don't allow providing other HTTP methods with :any
+          if opts[:methods] && opts[:methods].include?(:any) && opts[:methods].size > 1
+            raise 'unexpected additional methods provided with :any'
+          end
+
+          @methods = if opts[:methods].nil?
+                       [:get]
+                     elsif opts[:methods] == [:any]
+                       [:get, :head, :post, :put, :patch, :delete, :options]
+                     else
+                       opts[:methods]
+                     end.map { |e| e.to_s }
         end
       end
 
@@ -35,6 +53,11 @@ module Rack
       Contract None => Bool
       def public_resource?
         public_resource
+      end
+
+      Contract HttpMethods => Bool
+      def invalid_http_method?(request_method)
+        request_method.nil? || !methods.include?(request_method.downcase)
       end
 
       protected

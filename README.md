@@ -107,18 +107,25 @@ incoming tokens. The available claims are processed by the [garyf/jwt_claims](ht
 claims can be found in the README for that project. At a minimum a `:key` must
 be provided except if the `none` algorithm is being used (probably not recommended).
 
+For `secured` resources you can optionally also pass in a `:methods` option,
+which specifies an array of HTTP methods that are allowed for the specified `resource`.
+One or more of `[:any, :get, :head, :post, :put, :patch, :delete, :options]`
+can be provided. If the `:any` option is desired it must be the only option provided.
+
 Configuration directives are processed in the order that you provide and requests
-match against the first path match.  For this reason you should probably put your
+match against the **first path match**.  For this reason you should probably put your
 `unsecured` resources first and order all resources from most specific to least
-specific.
+specific. If multiple resources with the same path are configured, but with different
+options, only the first resource matched will be used to test the request, all
+others will be ignored.
 
 The DSL was heavily inspired by the [rack-cors](https://github.com/cyu/rack-cors)
-gem and the resource path matching code is a direct port from it.
+gem.
 
 ```ruby
 require 'rack/json_web_token_auth'
 
-# Sinatra `use` syntax
+# Sinatra style Rack middleware `use` syntax
 use Rack::JsonWebTokenAuth do
 
   # You can define JWT options for all `secured` resources globally
@@ -171,6 +178,35 @@ use Rack::JsonWebTokenAuth do
     # login and registration, and on successful login mint
     # another flavor of token for all other app API access.
     resource '/another/path', jwt: {key: 'a long random key', alg: 'HS512'}
+  end
+
+  # You can get very granular by specifying that a resource can only be accessed
+  # when requested with certain HTTP methods. The default for any resource is
+  # to allow HTTP `GET` requests only. You need to pass in a :methods array if
+  # you want to expose additional methods.
+  #
+  # The available choices are:
+  #   [:any, :get, :head, :post, :put, :patch, :delete, :options]
+  #
+  # If you try to specify :methods on an `unsecured` resource it will throw
+  # an exception.
+  secured do
+    # GET only
+    resource '/http_get_only', jwt: jwt_opts, methods: [:get]
+
+    # GET or POST
+    resource '/http_post_or_get', jwt: jwt_opts, methods: [:get, :post]
+
+    # ANY HTTP method allowed
+    resource '/http_any', jwt: jwt_opts, methods: [:any]
+
+    # ANY HTTP method allowed (alternate)
+    # This is the same as [:any]
+    resource '/http_any_manual', jwt: jwt_opts, methods: [:get, :head, :post, :put, :patch, :delete, :options]
+
+    # IGNORED! This resource path was already defined above!
+    # Even though it has different methods allowed it will be ignored.
+    resource '/http_post_or_get', jwt: jwt_opts, methods: [:post]
   end
 
   # You can have more than one `unsecured` or `secured` block if you like.
