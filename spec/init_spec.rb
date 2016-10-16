@@ -40,6 +40,11 @@ describe 'when initializing with' do
         resource '/nested_wildcard/*/deep', jwt: jwt_opts
       end
 
+      secured do
+        resource '/special.chars/*', jwt: jwt_opts
+        resource '/special+chars/*', jwt: jwt_opts
+      end
+
       # a secure block that defines the same resources
       # as a previous unsecured block (should be ignored)
       secured do
@@ -254,6 +259,55 @@ describe 'when initializing with' do
           get('/wildcard/foo')
           expect(last_response.status).to eq 401
         end
+      end
+    end
+  end
+
+  context 'defined in a special char path' do
+    describe 'allow access to . special char resource with a valid token' do
+      it 'and return 200' do
+        header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: key, alg: 'HS256')}"
+        get('/special.chars/foo')
+        expect(last_response.status).to eq 200
+      end
+    end
+
+    describe 'allow access to + special char resource with a valid token' do
+      it 'and return 200' do
+        header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: key, alg: 'HS256')}"
+        get('/special+chars/foo')
+        expect(last_response.status).to eq 200
+      end
+    end
+
+    describe 'allow access to ? special char resource with a valid token' do
+      it 'and return 200' do
+        header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: key, alg: 'HS256')}"
+        get('/special.chars/foo?bar=baz')
+        expect(last_response.status).to eq 200
+      end
+    end
+
+    describe 'allow access to # special char resource with a valid token' do
+      it 'and return 200' do
+        header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: key, alg: 'HS256')}"
+        get('/special.chars/foo#bar')
+        expect(last_response.status).to eq 200
+      end
+    end
+
+    describe 'deny access with an invalid token' do
+      it 'and return 401' do
+        header 'Authorization', "Bearer #{JsonWebToken.sign(claims, key: SecureRandom.hex(32), alg: 'HS256')}"
+        get('/special.chars/foo')
+        expect(last_response.status).to eq 401
+      end
+    end
+
+    describe 'deny access with no token' do
+      it 'and return 401' do
+        get('/special.chars/foo')
+        expect(last_response.status).to eq 401
       end
     end
   end

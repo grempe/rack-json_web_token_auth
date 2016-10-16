@@ -41,25 +41,20 @@ module Rack
 
       Contract String => Regexp
       def compile(path)
-        if path.respond_to? :to_str
-          special_chars = %w{. + ( )}
-          pattern =
-            path.to_str.gsub(/((:\w+)|[\*#{special_chars.join}])/) do |match|
-              case match
-              when '*'
-                '(.*?)'
-              when *special_chars
-                Regexp.escape(match)
-              else
-                '([^/?&#]+)'
-              end
-            end
-          /^#{pattern}$/
-        elsif path.respond_to? :match
-          path
-        else
-          raise TypeError, path
+        special_chars = %w{. + ( )}
+
+        pattern = path.gsub(/([\*#{special_chars.join}])/) do |match|
+          case match
+          when '*'
+            '(.*?)'
+          when *special_chars
+            Regexp.escape(match)
+          else
+            '([^/?&#]+)'
+          end
         end
+
+        /^#{pattern}$/
       end
     end
   end
