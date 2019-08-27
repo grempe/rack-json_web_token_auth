@@ -113,7 +113,7 @@ One or more of `[:any, :get, :head, :post, :put, :patch, :delete, :options]`
 can be provided. If the `:any` option is desired it must be the only option provided.
 
 Configuration directives are processed in the order that you provide and requests
-match against the **first path match**.  For this reason you should probably put your
+match against the **first path match**. For this reason you should probably put your
 `unsecured` resources first and order all resources from most specific to least
 specific. If multiple resources with the same path are configured, but with different
 options, only the first resource matched will be used to test the request, all
@@ -228,31 +228,6 @@ After checking out the repo, run `bundle install` to install dependencies. Then,
 run `bundle exec rake` to run the specs.
 
 To install this gem onto your local machine, run `bundle exec rake install`.
-
-### Installation Security : Signed Ruby Gem
-
-This gem is cryptographically signed. To be sure the gem you install hasn’t
-been tampered with you can install it using the following method:
-
-Add my public key (if you haven’t already) as a trusted certificate
-
-```
-# Caveat: Gem certificates are trusted globally, such that adding a
-# cert.pem for one gem automatically trusts all gems signed by that cert.
-gem cert --add <(curl -Ls https://raw.github.com/grempe/rack-json_web_token_auth/master/certs/gem-public_cert_grempe_2026.pem)
-```
-
-To install, it is possible to specify either `HighSecurity` or `MediumSecurity`
-mode. Since this gem depends on one or more gems that are not cryptographically
-signed you will likely need to use `MediumSecurity`. You should receive a warning
-if any signed gem does not match its signature.
-
-```
-# All signed dependent gems must be verified.
-gem install rack-json_web_token_auth -P MediumSecurity
-```
-
-You can [learn more about security and signed Ruby Gems](http://guides.rubygems.org/security/).
 
 ### Installation Security : Signed Git Commits
 
